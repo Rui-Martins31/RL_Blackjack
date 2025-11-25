@@ -9,7 +9,7 @@ SCENARIO_ACTIONS_NUM: int             = len(SCENARIO_ACTIONS)
 AGENT_TRAIN: bool = True
 
 # Episode
-NUM_EPISODES: int = 100_000
+NUM_EPISODES: int = 1_000_000
 
 # Training
 EPSILON: float              = 1.0
