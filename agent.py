@@ -33,7 +33,7 @@ class Agent:
         self.num_actions       = num_actions
 
         # Current state
-        # Q-matrix shape: (num_actions, player_sum, dealer_card, usable_ace)
+        # Q-matrix shape: (num_actions, player_sum, dealer_card)
         self.q_matrix          = np.zeros((self.num_actions, *self.num_observations))
         self.is_training: bool = False
 
