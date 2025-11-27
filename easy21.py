@@ -24,12 +24,10 @@ class Easy21:
         self.prob_black: float  = 2/3
     
     def _draw_card(self) -> int:
-        card: int = 0
-        while (-self.draw_values[0] < card < self.draw_values[0]):
-            # CAREFUL!!! We can draw a red card. It should be a value in [-10, -1] U [1, 10]
-            card  = random.randint(-self.draw_values[-1], self.draw_values[-1])
-        
-        return card
+        # CAREFUL!!! We can draw a red card. It should be a value in [-10, -1] U [1, 10]
+        card  = random.randint(*self.draw_values)
+        if (random.random() < self.prob_black): return card
+        else: return -card
 
     def _dealer_logic(self):
         while (1 < sum(self.cards_dealer) < 17):
@@ -77,23 +75,25 @@ class Easy21:
 
         # Check results
         terminal     = True
-        if (new_state[DEALER] > 21) or (new_state[DEALER] < 1):
-            print(f"Dealer busted!")
-            reward   = 1.0
-            return new_state, terminal, reward
-        if (new_state[PLAYER] > 21) or (new_state[PLAYER] < 1):
+        busted_dealer: bool = (new_state[DEALER] > 21) or (new_state[DEALER] < 1)
+        busted_player: bool = (new_state[PLAYER] > 21) or (new_state[PLAYER] < 1)
+        if busted_player:
             print(f"Player busted!")
             reward   = -1.0
             return new_state, terminal, reward
+        elif busted_dealer:
+            print(f"Dealer busted!")
+            reward   = 1.0
+            return new_state, terminal, reward
 
         if (new_state[DEALER] > new_state[PLAYER]):
-            print(f"Player LOSES!")
+            #print(f"Player LOSES!")
             reward   = -1.0
         elif (new_state[DEALER] < new_state[PLAYER]):
-            print(f"Player WINS!")
+            #print(f"Player WINS!")
             reward   = 1.0
         else:
-            print(f"DRAW!")
+            #print(f"DRAW!")
             reward   = 0.0
         
         return new_state, terminal, reward

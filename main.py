@@ -57,17 +57,15 @@ def main():
             episode_reward = reward
 
         # Print episode results
-        print(f"\nFinal reward: {episode_reward}")
+        print(f"\nFinal Observation: {observation}")
+        print(f"Final reward: {episode_reward}")
         if episode_reward > 0:
             print("Result: WIN")
+            list_wins += 1
         elif episode_reward < 0:
             print("Result: LOSS")
         else:
             print("Result: DRAW")
-
-        # Track statistics
-        if episode_reward > 0:
-            list_wins += 1
 
         total_rewards += episode_reward
         list_rewards.append(total_rewards)
@@ -91,6 +89,9 @@ def main():
     plt.legend()
     plt.grid(True)
     plt.show()
+
+    # Save model
+    
 
 
 if __name__ == "__main__":
