@@ -1,5 +1,6 @@
 import random
 import numpy as np
+import pickle
 
 import _config
 
@@ -98,3 +99,18 @@ class Agent:
 
     def test(self):
         self.is_training = False
+
+    def save_q_matrix(self, filepath: str = "q_matrix.pkl"):
+        with open(filepath, 'wb') as f:
+            pickle.dump(self.q_matrix, f)
+        print(f"[Agent] Q-matrix saved to {filepath}")
+
+    def load_q_matrix(self, filepath: str = "q_matrix.pkl"):
+        try:
+            with open(filepath, 'rb') as f:
+                self.q_matrix = pickle.load(f)
+            print(f"[Agent] Q-matrix loaded from {filepath}")
+            return True
+        except FileNotFoundError:
+            print(f"[Agent] File {filepath} not found.")
+            return False

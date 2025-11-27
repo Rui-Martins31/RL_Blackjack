@@ -1,3 +1,4 @@
 # Folder
 .venv
 __pycache__
+.vscode

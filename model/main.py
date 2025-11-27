@@ -4,8 +4,9 @@ import matplotlib.pyplot as plt
 from agent import Agent
 from easy21 import Easy21
 import _config
+from visualize import plot_policy_heatmap, plot_value_function_3d
 
-def main():
+def main(training: bool = False):
     # Environment
     env: Easy21  = Easy21()
     observation  = env.reset()
@@ -15,7 +16,8 @@ def main():
         observation=observation,
         num_actions=2
     )
-    agent.train()
+    if training: agent.train()
+    else: agent.test(); agent.load_q_matrix()
 
     # Run multiple episodes
     num_episodes: int    = _config.NUM_EPISODES
@@ -80,19 +82,19 @@ def main():
     print(f"Q-Matrix: {np.amax(agent.q_matrix)}")
     print(f"{'='*40}")
 
-    # Plot
-    plt.figure(figsize=(10, 6))
-    plt.plot(list_rewards, label='Episode Reward')
-    plt.xlabel('Episode')
-    plt.ylabel('Reward')
-    plt.title('Rewards per Episode')
-    plt.legend()
-    plt.grid(True)
+    # Save Q-matrix
+    if training: agent.save_q_matrix(f"{_config.PATH_SAVE_Q_MATRIX}q_matrix.pkl")
+
+    # Plot policy heatmap
+    print("\nGenerating policy heatmap...")
+    plot_policy_heatmap(agent.q_matrix, save_path=f"{_config.PATH_SAVE_IMAGES}policy_heatmap.png")
     plt.show()
 
-    # Save model
-    
+    # Plot 3D value function
+    print("\nGenerating 3D value function plot...")
+    plot_value_function_3d(agent.q_matrix, save_path=f"{_config.PATH_SAVE_IMAGES}value_function_3d.png")
+    plt.show()
 
 
 if __name__ == "__main__":
-    main()
+    main(training=_config.AGENT_TRAIN)
