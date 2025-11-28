@@ -1,0 +1,293 @@
+\documentclass[12pt]{article}
+
+\usepackage{geometry}
+
+\geometry{a4paper,portrait,top=30mm,bottom=20mm,left=2.54cm,
+	right=2.54cm,headsep=1mm,headheight=30mm,footskip=5mm}
+
+\renewcommand{\familydefault}{\sfdefault}
+
+\usepackage{sectsty}
+\sectionfont{\fontsize{15}{18}\selectfont}
+\subsectionfont{\fontsize{12}{15}\selectfont}
+
+\usepackage[utf8]{inputenc} % accents i altres
+\usepackage[T1]{fontenc}
+\usepackage{xcolor}
+
+\usepackage{multirow,tabularx}
+
+\PassOptionsToPackage{hyphens}{url}
+\usepackage[hidelinks]{hyperref}
+\usepackage{graphicx}
+\graphicspath{{Figures/}}
+
+\newcommand{\course}{Dynamic Programming and Learning for Decision and Control}
+\newcommand{\courseCode}{M.EEC026}
+\newcommand{\lectiveYear}{2025--2026}
+\newcommand{\semester}{1\textsuperscript{st}}
+\newcommand{\degreeYear}{2\textsuperscript{nd}}
+
+\usepackage{adjustbox}
+\usepackage{lastpage}
+%------------------------------ Header Footer ----------------------------------
+\usepackage{fancyhdr}
+	\pagestyle{fancyplain}					
+	\fancyhead{}
+	\fancyhead[]%
+	{%
+		\ifnum\thepage=1%
+			\begin{minipage}{0.25\textwidth}
+				{\includegraphics[width=0.9\textwidth]{images/logotipoUP.png}}
+			\end{minipage}\hfill%
+			\begin{minipage}{0.75\textwidth}
+				\begin{flushleft}
+					{\footnotesize\sc M.EEC $\vert$ \degreeYear{} Year}\\
+					{\footnotesize\sc\courseCode{} $\vert$ \course{} $\vert$ \lectiveYear{} –- \semester{} Semester}
+				\end{flushleft}
+			\end{minipage}\\
+			\rule[10pt]{\textwidth}{0.5pt}\\[-12pt]%
+			\vspace*{1mm}
+		\else
+			\begin{adjustbox}{varwidth=\textwidth,raise=5mm}
+				\centering
+				\textbf{Intermediate Report}\\
+				\rule[10pt]{\textwidth}{0.5pt}\\[-12pt]
+			\end{adjustbox}
+			\vspace*{-3mm}
+		\fi%
+	}
+	\fancyfoot{}	
+	\fancyfoot[CE,CO]%
+		{%
+			\footnotesize
+			\rule{\textwidth}{0.5pt}\\[2mm]
+			\thepage{}$/$\pageref{LastPage}%
+		}
+	\renewcommand{\headrulewidth}{0pt}					
+	\renewcommand{\footrulewidth}{0pt}	
+%-------------------------------------------------------------------------------
+
+\usepackage{amstext,amsfonts,amsmath,amsthm,graphicx,amssymb,amscd,epsfig}
+\usepackage{rotating}
+
+\usepackage{subfig}
+\captionsetup*[figure]{position=bottom}
+\captionsetup*[subfigure]{position=bottom}
+
+
+\usepackage{longtable}
+\usepackage[font=small,labelfont=bf]{caption}
+\usepackage{multirow}
+\usepackage{float}
+\usepackage{multicol}
+\usepackage{wrapfig}
+
+\usepackage[backend=biber, style=ieee]{biblatex}
+
+% After page
+\usepackage{afterpage}
+
+% Listing - Python
+\usepackage{listings}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codebackground}{rgb}{0.95,0.95,0.92}
+\lstset{
+    language=Python, 
+    basicstyle=\footnotesize\ttfamily, % Font size and family
+    backgroundcolor=\color{codebackground}, % Background color
+    commentstyle=\color{codegray}, % Comments style
+    keywordstyle=\color{blue}\bfseries, % Keywords style
+    numberstyle=\tiny\color{codegray}, % Line number style
+    stringstyle=\color{red}, % String style
+    frame=tb, % Frame on top and bottom
+    tabsize=4, % Tab space width
+    showtabs=false, % Show tabs as symbols
+    showspaces=false, % Show spaces as symbols
+    showstringspaces=false, % Show spaces in strings
+    breaklines=true, % Automatic line breaking
+    captionpos=b, % Caption position at bottom
+    floatplacement=H, % Place listing exactly where specified
+}
+
+\begin{document}
+
+%/---------- Title ---------/
+\begin{center}
+	\Large
+	\textbf{Blackjack Report}
+\end{center}
+	
+%/---------- Author ---------/
+\begin{center}
+	\large
+	Author: 202104636 Rui Filipe Castro Martins
+\end{center}
+
+%/---------- Main text body ---------/
+\section{Introduction} \label{section:introduction}
+
+    Reinforcement Learning (RL) is a powerful way to train models without relying specifically in supervised learning. Based on the concept of action-reward, the agent (the one to be trained) is placed inside the environment where it can interact with it according to its own observations of the environment. From those observations, the agent can act. Actions can be either benefitial (the agent gets closer to the goal) or detrimental (the agent can end up "losing").
+    
+    In this project, the main goal is to design and train an agent to successfully learn how to play a game of blackjack. However, it is worth noticing that this is not a traditional blackjack; this one is called Easy21 and is based on a set of rules that sets it apart from the original game played in casinos.
+
+% ----
+\section{Easy21} \label{section:easy21}
+
+    Easy21 can be seen as a spinoff of the original Blackjack game, where, for instance, cards like aces and faces cannot be drawed and the probability of drawing a red card is smaller than the probability of drwaing a black one. Also, red card should be counted as negative values for the final sum while black card as positive.
+
+    This simplified version allows the player to choose from two independent actions: HIT or STICK. The player, in a first moment, is showed two card: one corresponding to the initial card of the dealer, and one that belongs to himself. From this observation the player chooses wether he wants to gamble and receive another card by HITting or if he prefers to simply STICK to his current hand.
+
+    The winner is found by summing the value of the cards in each hand and evaluating which one is greater or by checking if either the player or the dealer busted by going over 21 or below 1.
+
+    There are four scenarios when it comes to the final result:
+        \begin{itemize}
+            \item Both player and dealer get the same value when summing their hands which means there is a DRAW;
+            \item The player has a greater hand than the dealer and WINS;
+            \item The dealer has a greater hand than the player and WINS;
+            \item Either the player or the dealer busts and the other side WINS.
+        \end{itemize}
+
+    Given the nature of this game, it is necessary to create a custom environment class that handles all the logic behind it. The subsequent snippets of code, shown in Listing \ref{listing:class_easy21} highlight the most important parts of the codebase.
+
+        \begin{lstlisting}[caption={Easy21 Environment Class Initialization}, label={listing:class_easy21}, float=h!]
+class Easy21:
+    def __init__(self):
+
+        # Observations
+        self.cards_dealer: list[int] = []   # First card: 1-10
+        self.cards_player: list[int] = []   # Total sum: 1-21
+
+        # Actions
+        self.actions: list[str] = [STICK, HIT]    # Stick, Hit
+
+        # Probabilities
+        self.draw_values: tuple[int] = (1, 10) # If we draw a red card we have (-10, -1) instead
+        self.prob_red: float    = 1/3
+        self.prob_black: float  = 2/3
+        \end{lstlisting}
+    
+    This custom environment allows us to quickly generate synthetic data to train the agent. 
+
+	
+	% \afterpage{
+	% 	\begin{figure}[t]
+	% 		\centering
+	% 		\includegraphics[width=0.7\linewidth]{california_wildfire_statistics.png}
+	% 		\caption{California's burnt area over the years \cite{frontline_CA_fire_map}.}
+	% 		\label{fig:burnt_area_annually}
+	% 	\end{figure}
+	% }
+
+% ----
+\section{Agent}
+
+    To better implement a modular agent that adapts to different scenarios, a custom class and script were developed to guarantee this characteristic. Despite being based on past implementations such as the one found under OpenAI's Gymnasium documentation, this agent was fully built from scratch with simplicity in mind.  
+
+    Listing \ref{listing:class_agent} shows the internal structure of the agent.
+
+        \begin{lstlisting}[caption={Agent Class Initialization}, label={listing:class_agent}, float=h!]
+class Agent:
+    def __init__(
+            self,
+            observation: tuple[int] = _config.SCENARIO_OBSERVATIONS,
+            num_observations: tuple[int] = _config.SCENARIO_OBSERVATIONS_NUM,
+            actions: tuple[int] = _config.SCENARIO_ACTIONS,
+            num_actions: int = _config.SCENARIO_ACTIONS_NUM,
+            alpha: float = _config.ALPHA,
+            gamma: float = _config.GAMMA, 
+            epsilon: float = _config.EPSILON,
+            epsilon_decay_factor: float = _config.EPSILON_DECAY_FACTOR,
+            epsilon_min: float = _config.EPSILON_MIN
+        ):
+
+        # Info
+        self.prev_observation  = observation
+        self.num_observations  = num_observations
+
+        self.actions           = actions
+        self.num_actions       = num_actions
+
+        # Current state
+        # Q-matrix shape: (num_actions, player_sum, dealer_card)
+        self.q_matrix          = np.zeros((self.num_actions, *self.num_observations))
+        self.is_training: bool = False
+
+        # Training
+        self.epsilon: float       = epsilon
+        self.epsilon_decay_factor = epsilon_decay_factor
+        self.epsilon_min: float   = epsilon_min
+        self.lr: float            = alpha
+        self.gamma: float         = gamma
+        \end{lstlisting}
+
+    As seen in Listing \ref{listing:class_agent}, a \_config file was created to quickly modify the parameters of both environment and agent without having to access them internally. Listing \ref{listing:config_file} briefly describes this \_config file.
+
+        \begin{lstlisting}[caption={Configuration File}, label={listing:config_file}, float=h!]
+# Scenario
+SCENARIO_OBSERVATIONS: tuple[int]     = (0, 0)
+SCENARIO_OBSERVATIONS_NUM: tuple[int] = (10+1, 10+1) #(21+1, 21+1)         # +1 is the offset since array starts at [0]
+SCENARIO_ACTIONS: tuple[int]          = (0, 1)
+SCENARIO_ACTIONS_NUM: int             = len(SCENARIO_ACTIONS)
+
+# Agent
+AGENT_TRAIN: bool = True
+
+# Episode
+if AGENT_TRAIN: 
+    NUM_EPISODES: int = 1_000_000
+else:
+    NUM_EPISODES: int = 10_000
+
+# Training
+EPSILON: float              = 1.0
+EPSILON_DECAY_FACTOR: float = 0.99
+EPSILON_MIN: float          = 0.1
+ALPHA: float                = 0.1    # Learning Rate
+GAMMA: float                = 0.99   # Discount Factor
+
+# Path
+PATH_SAVE_IMAGES: str   = "model/images/"
+PATH_SAVE_Q_MATRIX: str = "model/q_matrix/"
+        \end{lstlisting}
+
+    % \begin{figure}[h!]
+    % 	\centering
+    % 	\includegraphics[width=0.9\linewidth]{}
+    % 	\caption{System's diagram.}
+    % 	\label{fig:system_diagram}
+    % \end{figure}
+
+
+% ----
+\section{Results}
+
+    Heat Map:
+
+        \begin{figure}[h!]
+        	\centering
+        	\includegraphics[width=0.9\linewidth]{../model/images/policy_heatmap.png}
+        	\caption{Heat Map.}
+        	\label{fig:heat_map}
+        \end{figure}
+
+
+    3D Map of the Value Function:
+
+        \begin{figure}[h!]
+        	\centering
+        	\includegraphics[width=0.9\linewidth]{../model/images/value_function_3d.png}
+        	\caption{Heat Map.}
+        	\label{fig:heat_map}
+        \end{figure}
+	
+
+% ----
+\section{Conclusions}
+
+	
+
+
+% ----
+
+\end{document}
