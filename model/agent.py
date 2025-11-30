@@ -12,6 +12,8 @@ class Agent:
             actions: tuple[int] = _config.SCENARIO_ACTIONS,
             num_actions: int = _config.SCENARIO_ACTIONS_NUM,
             alpha: float = _config.ALPHA,
+            alpha_decay_factor: float = _config.ALPHA_DECAY_FACTOR,
+            alpha_min: float = _config.ALPHA_MIN,
             gamma: float = _config.GAMMA, 
             epsilon: float = _config.EPSILON,
             epsilon_decay_factor: float = _config.EPSILON_DECAY_FACTOR,
@@ -42,7 +44,11 @@ class Agent:
         self.epsilon: float       = epsilon
         self.epsilon_decay_factor = epsilon_decay_factor
         self.epsilon_min: float   = epsilon_min
+
         self.lr: float            = alpha
+        self.lr_decay_factor      = alpha_decay_factor
+        self.lr_min: float        = alpha_min
+        
         self.gamma: float         = gamma
 
     def reset(self, observation: tuple[int]):
@@ -51,6 +57,7 @@ class Agent:
 
         # Update epsilon
         self._epsilon_decay()
+        self._lr_decay()
         
     def update(self, observation: tuple[int], action: int = 0, reward: float = 0.0, done: bool = False):
         # Check types
@@ -93,6 +100,12 @@ class Agent:
             self.epsilon *= self.epsilon_decay_factor
         else:
             self.epsilon = self.epsilon_min
+
+    def _lr_decay(self):
+        if self.lr > self.lr_min:
+            self.lr *= self.lr_decay_factor
+        else:
+            self.lr = self.lr_min
 
     def train(self):
         self.is_training = True

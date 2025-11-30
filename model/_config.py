@@ -8,6 +8,7 @@ SCENARIO_ACTIONS_NUM: int             = len(SCENARIO_ACTIONS)
 AGENT_TRAIN: bool = True
 
 # Episode
+DEBUG: bool       = False
 if AGENT_TRAIN: 
     NUM_EPISODES: int = 1_000_000
 else:
@@ -18,6 +19,8 @@ EPSILON: float              = 1.0
 EPSILON_DECAY_FACTOR: float = 0.99
 EPSILON_MIN: float          = 0.1
 ALPHA: float                = 0.1    # Learning Rate
+ALPHA_DECAY_FACTOR: float   = 0.999
+ALPHA_MIN: float            = 0.01
 GAMMA: float                = 0.99   # Discount Factor
 
 # Path

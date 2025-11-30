@@ -33,10 +33,11 @@ def main(training: bool = False):
         episode_reward: float = 0.0
         terminated: bool      = False
 
-        print(f"\n--- Episode {episode + 1} ---")
-        print(f"Initial observation: {observation}")
-        print(f"  Player sum: {observation[0]}")
-        print(f"  Dealer showing: {observation[1]}")
+        if _config.DEBUG:
+            print(f"\n--- Episode {episode + 1} ---")
+            print(f"Initial observation: {observation}")
+            print(f"  Player sum: {observation[0]}")
+            print(f"  Dealer showing: {observation[1]}")
 
         while not terminated:
             # Select action
@@ -44,12 +45,13 @@ def main(training: bool = False):
 
             if action: action_name: str = "HIT"
             else: action_name: str = "STICK"
-            print(f"Action: {action_name}")
+            
+            if _config.DEBUG: print(f"Action: {action_name}")
 
             # Take action in the environment
             observation, terminated, reward = env.step(action)
 
-            if not terminated: print(f"New player sum: {observation[0]}")
+            if not terminated and _config.DEBUG: print(f"New player sum: {observation[0]}")
 
             # Update Q-matrix
             if not agent.update(observation, int(action), float(reward), terminated):
@@ -59,8 +61,10 @@ def main(training: bool = False):
             episode_reward = reward
 
         # Print episode results
-        print(f"\nFinal Observation: {observation}")
-        print(f"Final reward: {episode_reward}")
+        if _config.DEBUG:
+            print(f"\nFinal Observation: {observation}")
+            print(f"Final reward: {episode_reward}")
+            
         if episode_reward > 0:
             print("Result: WIN")
             list_wins += 1
