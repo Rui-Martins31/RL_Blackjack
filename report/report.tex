@@ -149,114 +149,40 @@
         \end{itemize}
 
     Given the nature of this game, it is necessary to create a custom environment class that handles all the logic behind it. The subsequent snippets of code, shown in Listing \ref{listing:class_easy21} highlight the most important parts of the codebase.
-
-        \begin{lstlisting}[caption={Easy21 Environment Class Initialization}, label={listing:class_easy21}, float=h!]
-class Easy21:
-    def __init__(self):
-
-        # Observations
-        self.cards_dealer: list[int] = []   # First card: 1-10
-        self.cards_player: list[int] = []   # Total sum: 1-21
-
-        # Actions
-        self.actions: list[str] = [STICK, HIT]    # Stick, Hit
-
-        # Probabilities
-        self.draw_values: tuple[int] = (1, 10) # If we draw a red card we have (-10, -1) instead
-        self.prob_red: float    = 1/3
-        self.prob_black: float  = 2/3
-        \end{lstlisting}
     
     This custom environment allows us to quickly generate synthetic data to train the agent. 
-
-	
-	% \afterpage{
-	% 	\begin{figure}[t]
-	% 		\centering
-	% 		\includegraphics[width=0.7\linewidth]{california_wildfire_statistics.png}
-	% 		\caption{California's burnt area over the years \cite{frontline_CA_fire_map}.}
-	% 		\label{fig:burnt_area_annually}
-	% 	\end{figure}
-	% }
 
 % ----
 \section{Agent}
 
-    To better implement a modular agent that adapts to different scenarios, a custom class and script were developed to guarantee this characteristic. Despite being based on past implementations such as the one found under OpenAI's Gymnasium documentation, this agent was fully built from scratch with simplicity in mind.  
+    To better implement a modular agent that adapts to different scenarios, a custom class and script were developed to guarantee this characteristic. Despite being based on past implementations such as the one found under OpenAI's Gymnasium documentation, this agent was fully built from scratch with simplicity in mind.
 
-    Listing \ref{listing:class_agent} shows the internal structure of the agent.
+    As seen in Listing \ref{listing:class_agent}, a config file was created to quickly modify the parameters of both environment and agent without having to access them internally. Listing \ref{listing:config_file} briefly describes this config file.
 
-        \begin{lstlisting}[caption={Agent Class Initialization}, label={listing:class_agent}, float=h!]
-class Agent:
-    def __init__(
-            self,
-            observation: tuple[int] = _config.SCENARIO_OBSERVATIONS,
-            num_observations: tuple[int] = _config.SCENARIO_OBSERVATIONS_NUM,
-            actions: tuple[int] = _config.SCENARIO_ACTIONS,
-            num_actions: int = _config.SCENARIO_ACTIONS_NUM,
-            alpha: float = _config.ALPHA,
-            gamma: float = _config.GAMMA, 
-            epsilon: float = _config.EPSILON,
-            epsilon_decay_factor: float = _config.EPSILON_DECAY_FACTOR,
-            epsilon_min: float = _config.EPSILON_MIN
-        ):
+    \subsection{Monte Carlo}
+        
+        A Monte Carlo simulation is a computer-based mathematical technique that uses repeated random sampling to model the probability of different outcomes in an uncertain process. Since, in this case, we developed a model of the environment and agent, it is possible to use Monte Carlo simulation to quickly come up with a steady state estimation of the Value Function.
 
-        # Info
-        self.prev_observation  = observation
-        self.num_observations  = num_observations
+        Some rules were stablished to ensure reproducibility and consistency. 
+        \begin{itemize}
+            \item Value function must be initialized to zero;
+            \item The Learning Rate value must follow the equation \ref{equation:lr_vary};
+                    \begin{equation} \label{equation:lr_vary}
+                        \alpha_{t} = \frac{1}{N(s_{t},a_{t})}
+                    \end{equation}
+            \item The Epsilon value, the one who dictates the ration between exploration and exploitation, must follow the equation \ref{equation:epsilon_vary};
+                    \begin{equation} \label{equation:epsilon_vary}
+                        \epsilon_{t} = \frac{N_{0}}{N_{0} + N(s_{t})}
+                    \end{equation}
+        \end{itemize}
 
-        self.actions           = actions
-        self.num_actions       = num_actions
+        By default, the expected value of N0 is 100, though other values should also be tested in case they produce better results in comparison.
 
-        # Current state
-        # Q-matrix shape: (num_actions, player_sum, dealer_card)
-        self.q_matrix          = np.zeros((self.num_actions, *self.num_observations))
-        self.is_training: bool = False
+        In the end, and with the output provided by the Monte Carlo simulation, it is possible to compute and plot a 3D visualization of the Value Function for different combinations of observations. A heatmap and a 3D representation of the Value Function were created and can be seen in Figures \ref{fig:heat_map} and \ref{fig:value_function}.
 
-        # Training
-        self.epsilon: float       = epsilon
-        self.epsilon_decay_factor = epsilon_decay_factor
-        self.epsilon_min: float   = epsilon_min
-        self.lr: float            = alpha
-        self.gamma: float         = gamma
-        \end{lstlisting}
+    \subsection{TD Learning}
 
-    As seen in Listing \ref{listing:class_agent}, a \_config file was created to quickly modify the parameters of both environment and agent without having to access them internally. Listing \ref{listing:config_file} briefly describes this \_config file.
-
-        \begin{lstlisting}[caption={Configuration File}, label={listing:config_file}, float=h!]
-# Scenario
-SCENARIO_OBSERVATIONS: tuple[int]     = (0, 0)
-SCENARIO_OBSERVATIONS_NUM: tuple[int] = (10+1, 10+1) #(21+1, 21+1)         # +1 is the offset since array starts at [0]
-SCENARIO_ACTIONS: tuple[int]          = (0, 1)
-SCENARIO_ACTIONS_NUM: int             = len(SCENARIO_ACTIONS)
-
-# Agent
-AGENT_TRAIN: bool = True
-
-# Episode
-if AGENT_TRAIN: 
-    NUM_EPISODES: int = 1_000_000
-else:
-    NUM_EPISODES: int = 10_000
-
-# Training
-EPSILON: float              = 1.0
-EPSILON_DECAY_FACTOR: float = 0.99
-EPSILON_MIN: float          = 0.1
-ALPHA: float                = 0.1    # Learning Rate
-GAMMA: float                = 0.99   # Discount Factor
-
-# Path
-PATH_SAVE_IMAGES: str   = "model/images/"
-PATH_SAVE_Q_MATRIX: str = "model/q_matrix/"
-        \end{lstlisting}
-
-    % \begin{figure}[h!]
-    % 	\centering
-    % 	\includegraphics[width=0.9\linewidth]{}
-    % 	\caption{System's diagram.}
-    % 	\label{fig:system_diagram}
-    % \end{figure}
+        SARSA (State-Action-Reward-State-Action) is an on-policy reinforcement learning algorithm that helps an agent to learn an optimal policy by interacting with its environment. The agent explores its environment, takes actions, receives feedback and continuously updates its behavior to maximize long-term rewards.
 
 
 % ----
@@ -264,9 +190,9 @@ PATH_SAVE_Q_MATRIX: str = "model/q_matrix/"
 
     Heat Map:
 
-        \begin{figure}[h!]
+        \begin{figure}[h]
         	\centering
-        	\includegraphics[width=0.9\linewidth]{../model/images/policy_heatmap.png}
+        	\includegraphics[width=0.75\linewidth]{../model/images/policy_heatmap.png}
         	\caption{Heat Map.}
         	\label{fig:heat_map}
         \end{figure}
@@ -274,18 +200,24 @@ PATH_SAVE_Q_MATRIX: str = "model/q_matrix/"
 
     3D Map of the Value Function:
 
-        \begin{figure}[h!]
+        \begin{figure}[h]
         	\centering
-        	\includegraphics[width=0.9\linewidth]{../model/images/value_function_3d.png}
-        	\caption{Heat Map.}
-        	\label{fig:heat_map}
+        	\includegraphics[width=0.75\linewidth]{../model/images/value_function_3d.png}
+        	\caption{Value function represented using a 3D chart.}
+        	\label{fig:value_function}
         \end{figure}
 	
 
 % ----
+\newpage
 \section{Conclusions}
 
 	
+% ----
+\newpage
+\section{Annexes}
+
+\include{annexes}
 
 
 % ----
