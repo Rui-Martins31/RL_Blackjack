@@ -57,7 +57,7 @@ def plot_policy_heatmap(q_matrix: np.ndarray, save_path: str = None):
     return fig
 
 
-def plot_value_function_3d(q_matrix: np.ndarray, save_path: str = None):
+def plot_value_function_3d(q_matrix: np.ndarray, save_path: str = None, mask_unvisited: bool = True):
     """
     Plot a 3D surface of the value function V*(s) = max_a Q*(s,a).
     Similar to the Sutton & Barto Blackjack example.
@@ -67,6 +67,7 @@ def plot_value_function_3d(q_matrix: np.ndarray, save_path: str = None):
                   Note: Matrix is indexed from 0, but index 0 is unused.
                   Actual values start at index 1 (dealer=1, player=1)
         save_path: Optional path to save the figure
+        mask_unvisited: If True, mask states where all actions have Q-value = 0 (unvisited)
     """
     # Get max Q-value for each state (value function)
     value_function = np.max(q_matrix, axis=0)
@@ -74,16 +75,26 @@ def plot_value_function_3d(q_matrix: np.ndarray, save_path: str = None):
     # Skip index 0 (unused) and use indices 1 onwards
     value_function_trimmed = value_function[1:, 1:]
 
+    # Mask unvisited states (where both actions have Q=0)
+    if mask_unvisited:
+        # A state is considered unvisited if all Q-values for that state are exactly 0
+        visited_mask = np.any(q_matrix[:, 1:, 1:] != 0, axis=0)
+        # Set unvisited states to NaN so they don't appear in the plot
+        value_function_trimmed = np.where(visited_mask, value_function_trimmed, np.nan)
+
     # Create meshgrid for 3D plot with actual card/sum values
-    dealer_range = np.arange(1, value_function_trimmed.shape[0] + 1)
+    # Swapping axes: X-axis = Player Sum, Y-axis = Dealer Showing
     player_range = np.arange(1, value_function_trimmed.shape[1] + 1)
-    X, Y = np.meshgrid(dealer_range, player_range)
+    dealer_range = np.arange(1, value_function_trimmed.shape[0] + 1)
+    # meshgrid(player, dealer) creates arrays with shape (len(dealer), len(player))
+    # We need to transpose to get (len(player), len(dealer))
+    Y, X = np.meshgrid(dealer_range, player_range)
 
     # Create 3D plot
     fig = plt.figure(figsize=(12, 9))
     ax = fig.add_subplot(111, projection='3d')
 
-    # Plot surface
+    # Plot surface - transpose to align data with swapped axes
     surf = ax.plot_surface(
         X, Y, value_function_trimmed.T,
         cmap='viridis',
@@ -92,14 +103,20 @@ def plot_value_function_3d(q_matrix: np.ndarray, save_path: str = None):
         antialiased=True
     )
 
-    # Labels and title
-    ax.set_xlabel('Dealer Showing', fontsize=11, labelpad=10)
-    ax.set_ylabel('Player Sum', fontsize=11, labelpad=10)
+    # Labels and title (swapped)
+    ax.set_xlabel('Player Sum', fontsize=11, labelpad=10)
+    ax.set_ylabel('Dealer Showing', fontsize=11, labelpad=10)
     ax.set_zlabel('Value', fontsize=11, labelpad=10)
-    ax.set_title('Optimal Value Function V*(s)', fontsize=14, fontweight='bold', pad=20)
+    title = 'Optimal Value Function V*(s)'
+    if mask_unvisited:
+        title += ' (unvisited states masked)'
+    ax.set_title(title, fontsize=14, fontweight='bold', pad=20)
 
-    # Set view angle (similar to Sutton & Barto)
-    ax.view_init(elev=30, azim=45)
+    # Invert Y-axis so Dealer Showing goes from 10 to 1 (left to right)
+    ax.invert_yaxis()
+
+    # Set view angle to match reference (player sum increases away from viewer)
+    ax.view_init(elev=30, azim=225)
 
     # Colorbar
     fig.colorbar(surf, ax=ax, shrink=0.5, aspect=5)

@@ -1,6 +1,6 @@
 # Scenario
 SCENARIO_OBSERVATIONS: tuple[int]     = (0, 0)
-SCENARIO_OBSERVATIONS_NUM: tuple[int] = (10+1, 10+1) #(21+1, 21+1)         # +1 is the offset since array starts at [0]
+SCENARIO_OBSERVATIONS_NUM: tuple[int] = (10+1, 21+1) #(21+1, 21+1)         # +1 is the offset since array starts at [0]
 SCENARIO_ACTIONS: tuple[int]          = (0, 1)
 SCENARIO_ACTIONS_NUM: int             = len(SCENARIO_ACTIONS)
 
@@ -15,13 +15,11 @@ else:
     NUM_EPISODES: int = 10_000
 
 # Training
-EPSILON: float              = 1.0
-EPSILON_DECAY_FACTOR: float = 0.99
-EPSILON_MIN: float          = 0.1
-ALPHA: float                = 0.1    # Learning Rate
-ALPHA_DECAY_FACTOR: float   = 0.999
-ALPHA_MIN: float            = 0.01
-GAMMA: float                = 0.99   # Discount Factor
+MONTE_CARLO: bool           = True   # True: Monte Carlo,
+                                     # False: TD Learning (Q-Learning)
+
+GAMMA: float                = 1.0    # Discount Factor
+N_0: float                  = 100.0  # Epsilon constant
 
 # Path
 PATH_SAVE_IMAGES: str   = "model/images/"

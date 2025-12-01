@@ -77,8 +77,9 @@ def main(training: bool = False):
         list_rewards.append(total_rewards)
 
     # Print summary statistics
+    method_used: str = "Monte Carlo Simulation" if _config.MONTE_CARLO else "TD Learning"
     print(f"\n{'='*40}")
-    print(f"Summary after {num_episodes} episodes:")
+    print(f"Summary after {num_episodes} episodes using {method_used}:")
     print(f"Total rewards: {total_rewards}")
     print(f"Average reward: {total_rewards/num_episodes:.2f}")
     print(f"Wins (%): {list_wins/num_episodes * 100:.2f}%")
@@ -87,16 +88,17 @@ def main(training: bool = False):
     print(f"{'='*40}")
 
     # Save Q-matrix
-    if training: agent.save_q_matrix(f"{_config.PATH_SAVE_Q_MATRIX}q_matrix.pkl")
+    method_used: str = "monte_carlo_" if _config.MONTE_CARLO else "td_learning_"
+    if training: agent.save_q_matrix(f"{_config.PATH_SAVE_Q_MATRIX + method_used}q_matrix.pkl")
 
     # Plot policy heatmap
     print("\nGenerating policy heatmap...")
-    plot_policy_heatmap(agent.q_matrix, save_path=f"{_config.PATH_SAVE_IMAGES}policy_heatmap.png")
+    plot_policy_heatmap(agent.q_matrix, save_path=f"{_config.PATH_SAVE_IMAGES + method_used}policy_heatmap.png")
     plt.show()
 
     # Plot 3D value function
     print("\nGenerating 3D value function plot...")
-    plot_value_function_3d(agent.q_matrix, save_path=f"{_config.PATH_SAVE_IMAGES}value_function_3d.png")
+    plot_value_function_3d(agent.q_matrix, save_path=f"{_config.PATH_SAVE_IMAGES + method_used}value_function_3d.png")
     plt.show()
 
 

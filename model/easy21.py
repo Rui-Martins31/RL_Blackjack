@@ -51,49 +51,50 @@ class Easy21:
         return state
 
     def step(self, action: int) -> tuple[tuple[int], bool, float]:
-        # State = [7, 18]
-        
         # Vars
         terminal: bool        = False
         reward: float         = 0.0
 
-        # Step
-        match action:
-            case 0: # Stick
-                self._dealer_logic()
+        # Player action
+        if action == HIT:
+            self.cards_player.append(self._draw_card())
 
-            case 1: # Hit
-                self.cards_player.append(self._draw_card())
+            # Check if player busted immediately after hitting
+            player_sum = sum(self.cards_player)
+            if (player_sum > 21) or (player_sum < 1):
+                print(f"Player busted!")
+                new_state: tuple[int] = (sum(self.cards_dealer), player_sum)
+                return new_state, True, -1.0
 
-                self._dealer_logic()
+            # Player didn't bust after hit, episode continues
+            new_state: tuple[int] = (sum(self.cards_dealer), player_sum)
+            return new_state, False, 0.0
 
-        # New state
+        # Player sticks (action == STICK)
+        self._dealer_logic()
+
+        # New state after dealer plays
         new_state: tuple[int] = (
             sum(self.cards_dealer),
             sum(self.cards_player)
         )
 
-        # Check results
-        terminal     = True
+        # Check dealer bust
+        terminal = True
         busted_dealer: bool = (new_state[DEALER] > 21) or (new_state[DEALER] < 1)
-        busted_player: bool = (new_state[PLAYER] > 21) or (new_state[PLAYER] < 1)
-        if busted_player:
-            print(f"Player busted!")
-            reward   = -1.0
-            return new_state, terminal, reward
-        elif busted_dealer:
+        if busted_dealer:
             print(f"Dealer busted!")
-            reward   = 1.0
-            return new_state, terminal, reward
+            return new_state, terminal, 1.0
 
+        # Compare final sums
         if (new_state[DEALER] > new_state[PLAYER]):
             #print(f"Player LOSES!")
-            reward   = -1.0
+            reward = -1.0
         elif (new_state[DEALER] < new_state[PLAYER]):
             #print(f"Player WINS!")
-            reward   = 1.0
+            reward = 1.0
         else:
             #print(f"DRAW!")
-            reward   = 0.0
-        
+            reward = 0.0
+
         return new_state, terminal, reward

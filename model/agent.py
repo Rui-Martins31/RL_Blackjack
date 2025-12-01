@@ -11,15 +11,11 @@ class Agent:
             num_observations: tuple[int] = _config.SCENARIO_OBSERVATIONS_NUM,
             actions: tuple[int] = _config.SCENARIO_ACTIONS,
             num_actions: int = _config.SCENARIO_ACTIONS_NUM,
-            alpha: float = _config.ALPHA,
-            alpha_decay_factor: float = _config.ALPHA_DECAY_FACTOR,
-            alpha_min: float = _config.ALPHA_MIN,
-            gamma: float = _config.GAMMA, 
-            epsilon: float = _config.EPSILON,
-            epsilon_decay_factor: float = _config.EPSILON_DECAY_FACTOR,
-            epsilon_min: float = _config.EPSILON_MIN
+            gamma: float = _config.GAMMA,
+            N_0: float = _config.N_0,
+            monte_carlo: bool = _config.MONTE_CARLO
         ):
-        
+
         # Check types
         if not isinstance(observation, tuple): print("[Agent] (__init__) observation is not list."); return
         for idx in range(len(observation)):
@@ -40,24 +36,28 @@ class Agent:
         self.q_matrix          = np.zeros((self.num_actions, *self.num_observations))
         self.is_training: bool = False
 
-        # Training
-        self.epsilon: float       = epsilon
-        self.epsilon_decay_factor = epsilon_decay_factor
-        self.epsilon_min: float   = epsilon_min
-
-        self.lr: float            = alpha
-        self.lr_decay_factor      = alpha_decay_factor
-        self.lr_min: float        = alpha_min
-        
+        # Training parameters
+        self.monte_carlo: bool    = monte_carlo
         self.gamma: float         = gamma
+        self.N_0: float           = N_0
+
+        # Visit counters
+        # N(s, a): count of times action a was selected from state s
+        self.state_action_count   = np.zeros((self.num_actions, *self.num_observations))
+        # N(s): count of times state s was visited
+        self.state_count          = np.zeros(self.num_observations)
+
+        # Episode trajectory for Monte Carlo learning
+        # Each episode stores: [(state, action, reward), ...]
+        self.episode_trajectory: list[tuple[tuple[int], int, float]] = []
 
     def reset(self, observation: tuple[int]):
         # Reset observations
         self.prev_observation = observation
 
-        # Update epsilon
-        self._epsilon_decay()
-        self._lr_decay()
+        # Clear episode trajectory for Monte Carlo
+        if self.monte_carlo:
+            self.episode_trajectory = []
         
     def update(self, observation: tuple[int], action: int = 0, reward: float = 0.0, done: bool = False):
         # Check types
@@ -68,44 +68,86 @@ class Agent:
         if not isinstance(reward, float) and not isinstance(reward, int): print("[Agent] (update) reward is not float or int."); return False
         if not isinstance(action, int):   print("[Agent] (update) action is not int.");   return False
 
-        # Update q_matrix
         if self.is_training:
-            # Get current Q-value
-            current_q = self.q_matrix[(action, *self.prev_observation)]
+            if self.monte_carlo:
+                # Monte Carlo: Store trajectory and update at episode end
+                self.episode_trajectory.append((self.prev_observation, action, reward))
 
-            # Check terminal state
-            if done:
-                next_max_q = 0
+                # Update Q-values only when episode is done
+                if done:
+                    self._monte_carlo_update()
             else:
-                next_max_q = np.amax(self.q_matrix[(slice(None), *observation)])
-
-            # Q-learning update
-            self.q_matrix[(action, *self.prev_observation)] = current_q + self.lr * (reward + self.gamma * next_max_q - current_q)
+                # TD Learning (Q-Learning): Update immediately
+                self._td_update(observation, action, reward, done)
 
         # Update observations
         self.prev_observation = observation
 
         return True
 
+    def _monte_carlo_update(self):
+
+        G = 0.0  # Return 
+        visited_state_actions = set()
+
+        # Process trajectory backwards
+        for t in range(len(self.episode_trajectory) - 1, -1, -1):
+            state, action, reward = self.episode_trajectory[t]
+
+            # Update return
+            G = self.gamma * G + reward
+
+            # First-visit MC: only update if this is the first occurrence of (s, a) in the episode
+            state_action = (action, *state)
+            if state_action not in visited_state_actions:
+                visited_state_actions.add(state_action)
+
+                # Increment visit counter
+                self.state_action_count[state_action] += 1
+
+                # Calculate learning rate: α_t = 1/N(s_t, a_t)
+                alpha_t = 1.0 / self.state_action_count[state_action]
+
+                # Get current Q-value
+                current_q = self.q_matrix[state_action]
+
+                # Monte Carlo update: Q(s, a) ← Q(s, a) + α[G - Q(s, a)]
+                self.q_matrix[state_action] = current_q + alpha_t * (G - current_q)
+
+    def _td_update(self, observation: tuple[int], action: int, reward: float, done: bool):
+
+        # Increment visit counter for state-action pair
+        self.state_action_count[(action, *self.prev_observation)] += 1
+
+        # Calculate learning rate: α_t = 1/N(s_t, a_t)
+        alpha_t = 1.0 / self.state_action_count[(action, *self.prev_observation)]
+
+        # Get current Q-value
+        current_q = self.q_matrix[(action, *self.prev_observation)]
+
+        # Check terminal state
+        if done:
+            next_max_q = 0
+        else:
+            next_max_q = np.amax(self.q_matrix[(slice(None), *observation)])
+
+        # Q-learning update: Q(s, a) ← Q(s, a) + α[r + γ max Q(s', a') - Q(s, a)]
+        self.q_matrix[(action, *self.prev_observation)] = current_q + alpha_t * (reward + self.gamma * next_max_q - current_q)
+
     def select(self, greedy: bool = False):
-        if (greedy) or (random.random() > self.epsilon):
+        # Increment state visit counter
+        if self.is_training:
+            self.state_count[self.prev_observation] += 1
+
+        # Calculate epsilon: ε_t = N_0 / (N_0 + N(s_t))
+        epsilon_t = self.N_0 / (self.N_0 + self.state_count[self.prev_observation])
+
+        if (greedy) or (random.random() > epsilon_t):
             # Get Q-values
             q_values = self.q_matrix[(slice(None), *self.prev_observation)]
             return np.argmax(q_values)
         else:
             return random.randint(self.actions[0], self.actions[-1])
-
-    def _epsilon_decay(self):
-        if self.epsilon > self.epsilon_min:
-            self.epsilon *= self.epsilon_decay_factor
-        else:
-            self.epsilon = self.epsilon_min
-
-    def _lr_decay(self):
-        if self.lr > self.lr_min:
-            self.lr *= self.lr_decay_factor
-        else:
-            self.lr = self.lr_min
 
     def train(self):
         self.is_training = True
