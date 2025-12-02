@@ -178,46 +178,49 @@
 
         By default, the expected value of N0 is 100, though other values should also be tested in case they produce better results in comparison.
 
-        In the end, and with the output provided by the Monte Carlo simulation, it is possible to compute and plot a 3D visualization of the Value Function for different combinations of observations. A heatmap and a 3D representation of the Value Function were created and can be seen in Figures \ref{fig:heat_map} and \ref{fig:value_function}.
+        In the end, and with the output provided by the Monte Carlo simulation, it is possible to compute and plot a 3D visualization of the Value Function for different combinations of observations. A heatmap and a 3D representation of the Value Function were created and can be seen in Figures \ref{fig:monte_carlo_heat_map} and \ref{fig:monte_carlo_value_function}.
 
     \subsection{TD Learning}
 
-        SARSA (State-Action-Reward-State-Action) is an on-policy reinforcement learning algorithm that helps an agent to learn an optimal policy by interacting with its environment. The agent explores its environment, takes actions, receives feedback and continuously updates its behavior to maximize long-term rewards.
+        TD (Temporal Difference) learning is a type of reinforcement learning method that uses a combination of Monte Carlo and dynamic programming to predict the future value of a state.
+
+        In our case we use the notion of SARSA to compute the desired metrics. SARSA (State-Action-Reward-State-Action) is an on-policy reinforcement learning algorithm that helps an agent to learn an optimal policy by interacting with its environment. The agent explores its environment, takes actions, receives feedback and continuously updates its behavior to maximize long-term rewards.
+
+        The real difference between the Monte Carlo simulation method and SARSA comes down to the moment where each of one of them performs the update logic. Monte Carlo tracks the entire trajectory of the episode and only updates at the end of it while SARSA updates every time it selects an action and receives the instant reward.
+
+        Additionally, the mean-squared error, as represented in Equation \ref{equation:mean_squared_error}, was computed every 1000 episodes to later compare the results for different $\lambda$ values.
+
+        \begin{equation} \label{equation:mean_squared_error}
+            \sum_{s,a} (Q(s, a) - Q^*(s, a))^2
+        \end{equation}
 
 
 % ----
 \section{Results}
 
-    Heat Map:
-
-        \begin{figure}[h]
-        	\centering
-        	\includegraphics[width=0.75\linewidth]{../model/images/policy_heatmap.png}
-        	\caption{Heat Map.}
-        	\label{fig:heat_map}
-        \end{figure}
-
-
-    3D Map of the Value Function:
-
-        \begin{figure}[h]
-        	\centering
-        	\includegraphics[width=0.75\linewidth]{../model/images/value_function_3d.png}
-        	\caption{Value function represented using a 3D chart.}
-        	\label{fig:value_function}
-        \end{figure}
+\input{results}
 	
 
 % ----
-\newpage
+\clearpage
 \section{Conclusions}
 
-	
+    This project successfully implemented and compared two fundamental reinforcement learning approaches for solving the Easy21 card game: Monte Carlo simulation and Temporal Difference (TD) learning with SARSA. The custom environment and modular agent architecture developed from scratch demonstrated the practical application of action-value methods in a stochastic decision-making scenario.
+
+    The Monte Carlo approach, using first-visit updates with episode-based learning, converged to a stable value function after 1,000,000 episodes. The adaptive learning rate $\alpha_{t} = 1/N(s_{t},a_{t})$ and epsilon-greedy exploration strategy $\epsilon_{t} = N_{0}/(N_{0} + N(s_{t}))$ with $N_{0} = 100$ enabled effective balance between exploration and exploitation. The resulting policy heatmap and 3D value function visualization clearly illustrated the agent's learned decision boundaries for different combinations of player and dealer cards.
+
+    The TD learning implementation with SARSA provided an alternative approach through step-by-step updates rather than episode-end batch updates. This online learning characteristic allowed the agent to adapt its policy during each episode, potentially offering faster convergence for certain state-action pairs. The mean-squared error metric computed every 1000 episodes provided quantitative assessment of learning progress and enabled comparison with the Monte Carlo baseline.
+
+    Both methods successfully learned viable blackjack strategies, as evidenced by the value function visualizations presented in Figures \ref{fig:monte_carlo_heat_map}, \ref{fig:monte_carlo_value_function}, \ref{fig:td_learning_heat_map}, and \ref{fig:td_learning_value_function}. The implementation's modular design, with configuration-driven parameters and separation of concerns between environment, agent, and visualization components, facilitated systematic experimentation and reproducible results.
+
+    The project demonstrated that reinforcement learning can effectively solve card game scenarios without explicit knowledge of optimal strategies, relying solely on trial-and-error interaction with the environment. The comparison between Monte Carlo and TD methods highlighted the trade-offs between episode-based and incremental learning approaches in the context of episodic tasks with terminal rewards.
+
+
 % ----
 \newpage
 \section{Annexes}
 
-\include{annexes}
+\input{annexes}
 
 
 % ----
