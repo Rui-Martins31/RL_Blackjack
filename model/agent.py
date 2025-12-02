@@ -13,7 +13,8 @@ class Agent:
             num_actions: int = _config.SCENARIO_ACTIONS_NUM,
             gamma: float = _config.GAMMA,
             N_0: float = _config.N_0,
-            monte_carlo: bool = _config.MONTE_CARLO
+            monte_carlo: bool = _config.MONTE_CARLO,
+            lambda_param: float = 0.0
         ):
 
         # Check types
@@ -40,6 +41,7 @@ class Agent:
         self.monte_carlo: bool    = monte_carlo
         self.gamma: float         = gamma
         self.N_0: float           = N_0
+        self.lambda_param: float  = lambda_param
 
         # Visit counters
         # N(s, a): count of times action a was selected from state s
@@ -51,6 +53,13 @@ class Agent:
         # Each episode stores: [(state, action, reward), ...]
         self.episode_trajectory: list[tuple[tuple[int], int, float]] = []
 
+        # Eligibility traces for Sarsa(λ)
+        # E(s, a): eligibility trace for state-action pair
+        self.eligibility_traces   = np.zeros((self.num_actions, *self.num_observations))
+
+        # Store previous action for Sarsa
+        self.prev_action: int = 0
+
     def reset(self, observation: tuple[int]):
         # Reset observations
         self.prev_observation = observation
@@ -58,6 +67,10 @@ class Agent:
         # Clear episode trajectory for Monte Carlo
         if self.monte_carlo:
             self.episode_trajectory = []
+
+        # Reset eligibility traces for Sarsa(λ)
+        if not self.monte_carlo and self.lambda_param > 0:
+            self.eligibility_traces = np.zeros((self.num_actions, *self.num_observations))
         
     def update(self, observation: tuple[int], action: int = 0, reward: float = 0.0, done: bool = False):
         # Check types
@@ -77,8 +90,11 @@ class Agent:
                 if done:
                     self._monte_carlo_update()
             else:
-                # TD Learning (Q-Learning): Update immediately
-                self._td_update(observation, action, reward, done)
+                # TD Learning: Use Sarsa(λ) if lambda > 0, otherwise Q-Learning
+                if self.lambda_param > 0:
+                    self._sarsa_lambda_update(observation, action, reward, done)
+                else:
+                    self._td_update(observation, action, reward, done)
 
         # Update observations
         self.prev_observation = observation
@@ -133,6 +149,53 @@ class Agent:
 
         # Q-learning update: Q(s, a) ← Q(s, a) + α[r + γ max Q(s', a') - Q(s, a)]
         self.q_matrix[(action, *self.prev_observation)] = current_q + alpha_t * (reward + self.gamma * next_max_q - current_q)
+
+    def _sarsa_lambda_update(self, observation: tuple[int], action: int, reward: float, done: bool):
+        """
+        Sarsa(λ) update with eligibility traces.
+        This implements the online version of Sarsa(λ) using backward-view eligibility traces.
+        """
+        # Get the next action using the same epsilon-greedy policy
+        if done:
+            next_action = 0  # Arbitrary, won't be used
+        else:
+            # Select next action using epsilon-greedy policy
+            self.state_count[observation] += 1
+            epsilon_t = self.N_0 / (self.N_0 + self.state_count[observation])
+            if random.random() > epsilon_t:
+                q_values = self.q_matrix[(slice(None), *observation)]
+                next_action = np.argmax(q_values)
+            else:
+                next_action = random.randint(self.actions[0], self.actions[-1])
+
+        # Increment visit counter for current state-action pair
+        self.state_action_count[(action, *self.prev_observation)] += 1
+
+        # Calculate learning rate: α_t = 1/N(s_t, a_t)
+        alpha_t = 1.0 / self.state_action_count[(action, *self.prev_observation)]
+
+        # Get current Q-value
+        current_q = self.q_matrix[(action, *self.prev_observation)]
+
+        # Calculate TD error
+        if done:
+            next_q = 0
+        else:
+            next_q = self.q_matrix[(next_action, *observation)]
+
+        td_error = reward + self.gamma * next_q - current_q
+
+        # Update eligibility trace for current state-action pair
+        self.eligibility_traces[(action, *self.prev_observation)] += 1
+
+        # Update all Q-values and eligibility traces
+        self.q_matrix += alpha_t * td_error * self.eligibility_traces
+
+        # Decay eligibility traces
+        self.eligibility_traces *= self.gamma * self.lambda_param
+
+        # Store next action for next iteration
+        self.prev_action = next_action if not done else 0
 
     def select(self, greedy: bool = False):
         # Increment state visit counter

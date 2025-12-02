@@ -17,7 +17,8 @@ def plot_policy_heatmap(q_matrix: np.ndarray, save_path: str = None):
     # argmax over action dimension (axis=0)
     policy = np.argmax(q_matrix, axis=0)
 
-    # Skip index 0 (unused) and use indices 1 onwards
+    # Skip index 0 (unused) for both dealer and player
+    # Dealer cards: 1-10, Player sums: 1-21
     policy_trimmed = policy[1:, 1:]
 
     # Create figure
@@ -30,7 +31,7 @@ def plot_policy_heatmap(q_matrix: np.ndarray, save_path: str = None):
         cmap='coolwarm',
         aspect='auto',
         origin='lower',  # Start from bottom left
-        extent=[0.5, policy_trimmed.shape[0] + 0.5, 0.5, policy_trimmed.shape[1] + 0.5],
+        extent=[1, policy_trimmed.shape[0] + 1, 1, policy_trimmed.shape[1] + 1],
         vmin=0,
         vmax=1
     )
@@ -39,7 +40,7 @@ def plot_policy_heatmap(q_matrix: np.ndarray, save_path: str = None):
     cbar = plt.colorbar(im, ax=ax, ticks=[0, 1])
     cbar.set_label('Action (0=STICK, 1=HIT)', fontsize=12)
 
-    # Set tick positions to show actual values (1-10 for dealer, 1-10 for player)
+    # Set tick positions to show actual values (1-10 for dealer, 1-21 for player)
     ax.set_xticks(range(1, policy_trimmed.shape[0] + 1))
     ax.set_yticks(range(1, policy_trimmed.shape[1] + 1))
 
@@ -111,6 +112,14 @@ def plot_value_function_3d(q_matrix: np.ndarray, save_path: str = None, mask_unv
     if mask_unvisited:
         title += ' (unvisited states masked)'
     ax.set_title(title, fontsize=14, fontweight='bold', pad=20)
+
+    # Set axis limits to start exactly at 1 (never show 0)
+    ax.set_xlim(1, player_range[-1])
+    ax.set_ylim(1, dealer_range[-1])
+
+    # Set tick marks to show only valid values (1-10 for dealer, 1-21 for player)
+    ax.set_yticks(dealer_range)
+    ax.set_xticks(player_range[::2])  # Show every other player sum for clarity
 
     # Invert Y-axis so Dealer Showing goes from 10 to 1 (left to right)
     ax.invert_yaxis()
