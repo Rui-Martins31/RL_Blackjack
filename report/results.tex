@@ -1,17 +1,27 @@
 % Monte Carlo
 \subsection{Monte Carlo}
 
-Metrics:
+The Monte Carlo control algorithm was run for 1,000,000 episodes to obtain an accurate estimate of the optimal Q-values (Q*). This serves as the baseline for evaluating the TD learning methods. Table \ref{table:monte_carlo_results} summarizes the performance metrics.
 
-========================================
-Summary after 1000000 episodes using Monte Carlo Simulation:
-Total rewards: 141417.0
-Average reward: 0.14
-Wins (%): 56.66%
-Q-Matrix: 1.0
-========================================
+\begin{table}[h!]
+\centering
+\begin{tabular}{|l|c|}
+\hline
+\textbf{Metric} & \textbf{Value} \\
+\hline
+Total Episodes & 1,000,000 \\
+Total Rewards & 141,417.0 \\
+Average Reward per Episode & 0.14 \\
+Win Rate & 56.66\% \\
+\hline
+\end{tabular}
+\caption{Monte Carlo simulation results after 1,000,000 episodes.}
+\label{table:monte_carlo_results}
+\end{table}
 
-Heat Map and 3D Map of the Value Function:
+The results show that the optimal policy achieves a win rate of approximately 57\%. The positive average reward indicates that the learned policy successfully learns how to beat the dealer most of the time.
+
+Heat Map (colored representation of the optimal actions in each situation) and 3D Map of the Value Function can be seen in Figures \ref{fig:monte_carlo_heat_map} and \ref{fig:monte_carlo_value_function}
 
 \begin{figure}[h!]
     \centering
@@ -28,20 +38,55 @@ Heat Map and 3D Map of the Value Function:
 \end{figure}
 
 % TD Learning
-\subsection{TD Learning}
+\subsection{TD Learning with Sarsa($\lambda$)}
 
-Heat Map and 3D Map of the Value Function:
+The Sarsa($\lambda$) algorithm was tested with 11 different values of $\lambda$ ranging from 0.0 to 1.0 in increments of 0.1. Each experiment ran for 1000 episodes, and the mean-squared error was computed by comparing the learned Q-values against the optimal Q* values from the Monte Carlo baseline.
+
+\subsubsection{MSE vs Lambda Analysis}
+
+Table \ref{table:mse_vs_lambda} presents the final MSE values for each $\lambda$ configuration. The results show that $\lambda = 0.1$ achieved the best performance with an MSE of 0.204343, while $\lambda = 1.0$ had the worst performance with an MSE of 0.482572, as illustrated by Table \ref{table:mse_vs_lambda}.
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{|c|c|}
+\hline
+\textbf{$\lambda$} & \textbf{MSE} \\
+\hline
+0.0 & 0.237316 \\
+0.1 & \textbf{0.204343} \\
+0.2 & 0.226315 \\
+0.3 & 0.220161 \\
+0.4 & 0.220093 \\
+0.5 & 0.247632 \\
+0.6 & 0.266126 \\
+0.7 & 0.277020 \\
+0.8 & 0.301613 \\
+0.9 & 0.371927 \\
+1.0 & 0.482572 \\
+\hline
+\end{tabular}
+\caption{Mean-squared error for different $\lambda$ values after 1000 episodes.}
+\label{table:mse_vs_lambda}
+\end{table}
+
+Figure \ref{fig:mse_vs_lambda} visualizes the relationship between $\lambda$ and MSE. The plot reveals a clear trend: performance degrades as $\lambda$ increases beyond 0.1. This suggests that with only 1000 episodes, eligibility traces that propagate too far backward (higher $\lambda$ values) introduce more variance than benefit. Lower $\lambda$ values, which focus more on immediate temporal differences, converge faster with limited training data.
 
 \begin{figure}[h!]
     \centering
-    \includegraphics[width=0.6\linewidth]{../model/images/td_learning_policy_heatmap.png}
-    \caption{TD Learning - Heat Map.}
-    \label{fig:td_learning_heat_map}
+    \includegraphics[width=0.75\linewidth]{../model/images/td_learning_mse_vs_lambda.png}
+    \caption{Mean-squared error as a function of $\lambda$. The minimum occurs at $\lambda = 0.1$, demonstrating that a small amount of eligibility trace provides the best balance between bias and variance for this task with 1000 episodes.}
+    \label{fig:mse_vs_lambda}
 \end{figure}
+
+\subsubsection{Learning Curves Analysis}
+
+Figure \ref{fig:learning_curves} shows the evolution of MSE over 1000 episodes for $\lambda = 0$ (pure Sarsa) and $\lambda = 1$ (Monte Carlo-like). The $\lambda = 0$ curve demonstrates more stable convergence, while $\lambda = 1$ exhibits higher variance throughout training, which explains its poorer final performance.
 
 \begin{figure}[h!]
     \centering
-    \includegraphics[width=0.6\linewidth]{../model/images/td_learning_value_function_3d.png}
-    \caption{TD Learning - Value function represented using a 3D chart.}
-    \label{fig:td_learning_value_function}
+    \includegraphics[width=0.75\linewidth]{../model/images/td_learning_curves.png}
+    \caption{Learning curves comparing $\lambda = 0$ (Sarsa) and $\lambda = 1$ (similar to Monte Carlo). The Sarsa method ($\lambda = 0$) shows faster and more stable convergence compared to the Monte Carlo approach with limited episodes.}
+    \label{fig:learning_curves}
 \end{figure}
+
+The key observation is that $\lambda = 0$ (one-step Sarsa) outperforms $\lambda = 1$ (full episode backup) when training is limited to 1000 episodes. This is expected because Monte Carlo methods require more samples to achieve low variance estimates, while TD methods can learn effectively from fewer samples by bootstrapping from current estimates.

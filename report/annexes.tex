@@ -15,7 +15,7 @@ class Easy21:
         self.prob_black: float  = 2/3
 \end{lstlisting}
 
-\begin{lstlisting}[caption={Agent Class Initialization}, label={listing:class_agent}][h]
+\begin{lstlisting}[caption={Agent Class Initialization with Sarsa($\lambda$) Support}, label={listing:class_agent}][h]
 class Agent:
     def __init__(
             self,
@@ -23,37 +23,44 @@ class Agent:
             num_observations: tuple[int] = _config.SCENARIO_OBSERVATIONS_NUM,
             actions: tuple[int] = _config.SCENARIO_ACTIONS,
             num_actions: int = _config.SCENARIO_ACTIONS_NUM,
-            alpha: float = _config.ALPHA,
-            gamma: float = _config.GAMMA, 
-            epsilon: float = _config.EPSILON,
-            epsilon_decay_factor: float = _config.EPSILON_DECAY_FACTOR,
-            epsilon_min: float = _config.EPSILON_MIN
+            gamma: float = _config.GAMMA,
+            N_0: float = _config.N_0,
+            monte_carlo: bool = _config.MONTE_CARLO,
+            lambda_param: float = 0.0
         ):
 
         # Info
         self.prev_observation  = observation
         self.num_observations  = num_observations
-
         self.actions           = actions
         self.num_actions       = num_actions
 
-        # Current state
-        # Q-matrix shape: (num_actions, player_sum, dealer_card)
+        # Q-matrix shape: (num_actions, dealer_card, player_sum)
         self.q_matrix          = np.zeros((self.num_actions, *self.num_observations))
         self.is_training: bool = False
 
-        # Training
-        self.epsilon: float       = epsilon
-        self.epsilon_decay_factor = epsilon_decay_factor
-        self.epsilon_min: float   = epsilon_min
-        self.lr: float            = alpha
+        # Training parameters
+        self.monte_carlo: bool    = monte_carlo
         self.gamma: float         = gamma
+        self.N_0: float           = N_0
+        self.lambda_param: float  = lambda_param
+
+        # Visit counters
+        self.state_action_count   = np.zeros((self.num_actions, *self.num_observations))
+        self.state_count          = np.zeros(self.num_observations)
+
+        # Episode trajectory for Monte Carlo
+        self.episode_trajectory: list[tuple[tuple[int], int, float]] = []
+
+        # Eligibility traces for Sarsa(lambda)
+        self.eligibility_traces   = np.zeros((self.num_actions, *self.num_observations))
+        self.prev_action: int = 0
 \end{lstlisting}
 
 \begin{lstlisting}[caption={Configuration File}, label={listing:config_file}][h]
 # Scenario
 SCENARIO_OBSERVATIONS: tuple[int]     = (0, 0)
-SCENARIO_OBSERVATIONS_NUM: tuple[int] = (10+1, 10+1) #(21+1, 21+1)         # +1 is the offset since array starts at [0]
+SCENARIO_OBSERVATIONS_NUM: tuple[int] = (10+1, 21+1)  # +1 offset since array starts at [0]
 SCENARIO_ACTIONS: tuple[int]          = (0, 1)
 SCENARIO_ACTIONS_NUM: int             = len(SCENARIO_ACTIONS)
 
@@ -61,17 +68,15 @@ SCENARIO_ACTIONS_NUM: int             = len(SCENARIO_ACTIONS)
 AGENT_TRAIN: bool = True
 
 # Episode
-if AGENT_TRAIN: 
+if AGENT_TRAIN:
     NUM_EPISODES: int = 1_000_000
 else:
     NUM_EPISODES: int = 10_000
 
 # Training
-EPSILON: float              = 1.0
-EPSILON_DECAY_FACTOR: float = 0.99
-EPSILON_MIN: float          = 0.1
-ALPHA: float                = 0.1    # Learning Rate
-GAMMA: float                = 0.99   # Discount Factor
+MONTE_CARLO: bool  = True   # True: Monte Carlo, False: TD Learning
+GAMMA: float       = 1.0    # Discount Factors
+N_0: float         = 100.0  # Epsilon constant for exploration
 
 # Path
 PATH_SAVE_IMAGES: str   = "model/images/"

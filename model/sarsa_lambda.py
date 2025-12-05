@@ -1,12 +1,3 @@
-"""
-Question 3: TD Learning in Easy21
-
-Implement Sarsa(λ) in Easy21. Run the algorithm with parameter values λ ∈ {0, 0.1, 0.2, ..., 1}.
-Stop each run after 1000 episodes and report the mean-squared error comparing with Q* from Monte Carlo.
-Plot the mean-squared error against λ.
-For λ = 0 and λ = 1 only, plot the learning curve of mean-squared error against episode number.
-"""
-
 import numpy as np
 import matplotlib.pyplot as plt
 import pickle
@@ -17,9 +8,8 @@ import _config
 
 
 def load_optimal_q_matrix(filepath: str = None):
-    """Load the optimal Q-matrix from Monte Carlo simulation."""
     if filepath is None:
-        filepath = "q_matrix/monte_carlo_q_matrix.pkl"
+        filepath   = "q_matrix/monte_carlo_q_matrix.pkl"
 
     try:
         with open(filepath, 'rb') as f:
@@ -33,25 +23,22 @@ def load_optimal_q_matrix(filepath: str = None):
 
 
 def calculate_mse(q_matrix, q_star):
-    """Calculate mean-squared error between estimated Q and optimal Q*."""
     return np.mean((q_matrix - q_star) ** 2)
 
 
 def run_sarsa_lambda_episode(env, agent):
-    """Run a single episode with Sarsa(λ)."""
     observation = env.reset()
     agent.reset(observation)
-    terminated = False
+    terminated  = False
 
     while not terminated:
-        action = agent.select()
+        action  = agent.select()
         observation, terminated, reward = env.step(action)
         agent.update(observation, int(action), float(reward), terminated)
 
 
 def run_sarsa_lambda_experiment(lambda_param, q_star, num_episodes=1000, track_learning_curve=False):
-    """Run Sarsa(λ) for a given lambda value."""
-    env = Easy21()
+    env         = Easy21()
     observation = env.reset()
 
     agent = Agent(
@@ -76,7 +63,6 @@ def run_sarsa_lambda_experiment(lambda_param, q_star, num_episodes=1000, track_l
 
 
 def plot_mse_vs_lambda(lambda_values, mse_values, save_path=None):
-    """Plot mean-squared error against lambda."""
     plt.figure(figsize=(10, 6))
     plt.plot(lambda_values, mse_values, 'bo-', linewidth=2, markersize=8)
     plt.xlabel('Lambda (λ)', fontsize=12)
@@ -91,7 +77,6 @@ def plot_mse_vs_lambda(lambda_values, mse_values, save_path=None):
 
 
 def plot_learning_curves(lambda_0_curve, lambda_1_curve, save_path=None):
-    """Plot learning curves for λ=0 and λ=1."""
     plt.figure(figsize=(12, 6))
     episodes = range(1, len(lambda_0_curve) + 1)
 
@@ -111,25 +96,18 @@ def plot_learning_curves(lambda_0_curve, lambda_1_curve, save_path=None):
 
 
 def main():
-    print("="*60)
-    print("Question 3: TD Learning with Sarsa(λ)")
-    print("="*60)
 
-    # Load optimal Q-matrix from Monte Carlo
     q_star = load_optimal_q_matrix()
     if q_star is None:
         return
 
-    # Lambda values to test
-    lambda_values = [i / 10.0 for i in range(11)]  # [0.0, 0.1, 0.2, ..., 1.0]
+    lambda_values = [i / 10.0 for i in range(11)]
     print(f"\nTesting lambda values: {lambda_values}")
 
-    # Store results
-    mse_values = []
-    lambda_0_curve = None
-    lambda_1_curve = None
+    mse_values: list = []
+    lambda_0_curve   = None
+    lambda_1_curve   = None
 
-    # Run experiments for each lambda
     print("\nRunning Sarsa(λ) experiments...")
     for idx, lambda_param in enumerate(lambda_values):
         print(f"[{idx+1}/{len(lambda_values)}] Testing λ = {lambda_param:.1f}...")
@@ -144,14 +122,13 @@ def main():
 
         mse_values.append(final_mse)
 
-        if lambda_param == 0.0:
+        if lambda_param   == 0.0:
             lambda_0_curve = learning_curve
         elif lambda_param == 1.0:
             lambda_1_curve = learning_curve
 
         print(f"  λ = {lambda_param:.1f}: MSE = {final_mse:.6f}")
 
-    # Print results summary
     print("\n" + "="*60)
     print("Results Summary:")
     print("="*60)
@@ -164,7 +141,6 @@ def main():
     print(f"\n  Best λ = {best_lambda:.1f} with MSE = {best_mse:.6f}")
     print("="*60)
 
-    # Generate plots
     print("\nGenerating plots...")
 
     plot_mse_vs_lambda(

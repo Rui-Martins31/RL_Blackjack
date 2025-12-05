@@ -134,9 +134,9 @@
 % ----
 \section{Easy21} \label{section:easy21}
 
-    Easy21 can be seen as a spinoff of the original Blackjack game, where, for instance, cards like aces and faces cannot be drawed and the probability of drawing a red card is smaller than the probability of drwaing a black one. Also, red card should be counted as negative values for the final sum while black card as positive.
+    Easy21 can be seen as a spinoff of the original Blackjack game, where, for instance, cards like aces and faces cannot be drawed and the probability of drawing a red card is smaller than the probability of drawing a black one. Also, red card should be counted as negative values for the final sum while black card as positive.
 
-    This simplified version allows the player to choose from two independent actions: HIT or STICK. The player, in a first moment, is showed two card: one corresponding to the initial card of the dealer, and one that belongs to himself. From this observation the player chooses wether he wants to gamble and receive another card by HITting or if he prefers to simply STICK to his current hand.
+    This simplified version allows the player to choose from two independent actions: HIT or STICK. The player, in an initial moment, is showed two card: one corresponding to the initial card of the dealer, and one that belongs to himself. From this observation the player chooses wether he wants to gamble and receive another card by HITting or, if he prefers, to simply STICK to his current hand.
 
     The winner is found by summing the value of the cards in each hand and evaluating which one is greater or by checking if either the player or the dealer busted by going over 21 or below 1.
 
@@ -148,7 +148,7 @@
             \item Either the player or the dealer busts and the other side WINS.
         \end{itemize}
 
-    Given the nature of this game, it is necessary to create a custom environment class that handles all the logic behind it. The subsequent snippets of code, shown in Listing \ref{listing:class_easy21} highlight the most important parts of the codebase.
+    Given the nature of this game, it is necessary to create a custom environment class that handles all the logic behind it. The subsequent snippets of code, shown in Listing \ref{listing:class_easy21}, highlight the most important parts of the codebase.
     
     This custom environment allows us to quickly generate synthetic data to train the agent. 
 
@@ -176,23 +176,61 @@
                     \end{equation}
         \end{itemize}
 
-        By default, the expected value of N0 is 100, though other values should also be tested in case they produce better results in comparison.
+        By default, the expected value of $N_{0}$ is 100, though other values should also be tested in case they produce better results in comparison.
 
         In the end, and with the output provided by the Monte Carlo simulation, it is possible to compute and plot a 3D visualization of the Value Function for different combinations of observations. A heatmap and a 3D representation of the Value Function were created and can be seen in Figures \ref{fig:monte_carlo_heat_map} and \ref{fig:monte_carlo_value_function}.
 
-    \subsection{TD Learning}
+    \subsection{TD Learning with Sarsa($\lambda$)}
 
-        TD (Temporal Difference) learning is a type of reinforcement learning method that uses a combination of Monte Carlo and dynamic programming to predict the future value of a state.
+        TD (Temporal Difference) learning is a reinforcement learning method that combines ideas from Monte Carlo and dynamic programming to predict the value of states. Unlike Monte Carlo methods that wait until the end of an episode, TD learning updates value estimates after each step based on subsequent estimates.
 
-        In our case we use the notion of SARSA to compute the desired metrics. SARSA (State-Action-Reward-State-Action) is an on-policy reinforcement learning algorithm that helps an agent to learn an optimal policy by interacting with its environment. The agent explores its environment, takes actions, receives feedback and continuously updates its behavior to maximize long-term rewards.
+        In this project, Sarsa($\lambda$) was implemented, which extends the basic Sarsa algorithm with eligibility traces. Sarsa (State-Action-Reward-State-Action) is an on-policy reinforcement learning algorithm that learns by following its current policy. The addition of the $\lambda$ parameter allows the algorithm to bridge between one-step TD learning ($\lambda = 0$) and Monte Carlo methods ($\lambda = 1$).
 
-        The real difference between the Monte Carlo simulation method and SARSA comes down to the moment where each of one of them performs the update logic. Monte Carlo tracks the entire trajectory of the episode and only updates at the end of it while SARSA updates every time it selects an action and receives the instant reward.
+        \subsubsection{Eligibility Traces}
 
-        Additionally, the mean-squared error, as represented in Equation \ref{equation:mean_squared_error}, was computed every 1000 episodes to later compare the results for different $\lambda$ values.
+        Eligibility traces provide a mechanism for efficient credit assignment by maintaining a memory of which state-action pairs have been recently visited. The trace for each state-action pair is updated as shown in Equation \ref{equation:eligibility_trace}.
+
+        \begin{equation} \label{equation:eligibility_trace}
+            E(s_t, a_t) \leftarrow E(s_t, a_t) + 1
+        \end{equation}
+
+        After each step, all eligibility traces decay according to Equation \ref{equation:trace_decay}.
+
+        \begin{equation} \label{equation:trace_decay}
+            E(s, a) \leftarrow \gamma \lambda E(s, a)
+        \end{equation}
+
+        where $\gamma$ is the discount factor (set to 1.0 for this undiscounted task) and $\lambda$ controls the degree of bootstrapping.
+
+        \subsubsection{Update Rule}
+
+        The Q-value updates in Sarsa($\lambda$) use the TD error $\delta_t$ and eligibility traces as shown in Equations \ref{equation:td_error} and \ref{equation:sarsa_lambda_update}.
+
+        \begin{equation} \label{equation:td_error}
+            \delta_t = r_t + \gamma Q(s_{t+1}, a_{t+1}) - Q(s_t, a_t)
+        \end{equation}
+
+        \begin{equation} \label{equation:sarsa_lambda_update}
+            Q(s, a) \leftarrow Q(s, a) + \alpha_t \delta_t E(s, a), \quad \forall s, a
+        \end{equation}
+
+        This update rule allows the TD error to propagate backward through the episode to all previously visited state-action pairs, weighted by their eligibility traces.
+
+        \subsubsection{Experimental Setup}
+
+        The same learning rate and exploration schedules from the Monte Carlo implementation were maintained for consistency:
+        \begin{itemize}
+            \item Learning rate: $\alpha_{t} = 1/N(s_{t},a_{t})$
+            \item Exploration rate: $\epsilon_{t} = N_{0}/(N_{0} + N(s_{t}))$ with $N_{0} = 100$
+        \end{itemize}
+
+        Experiments were conducted for $\lambda \in \{0.0, 0.1, 0.2, \ldots, 1.0\}$, with each configuration running for 1000 episodes. The mean-squared error (MSE), defined in Equation \ref{equation:mean_squared_error}, was computed to compare the learned Q-values against the optimal values $Q^*$ obtained from the Monte Carlo simulation with 1,000,000 episodes.
 
         \begin{equation} \label{equation:mean_squared_error}
-            \sum_{s,a} (Q(s, a) - Q^*(s, a))^2
+            \text{MSE} = \sum_{s,a} (Q(s, a) - Q^*(s, a))^2
         \end{equation}
+
+        For $\lambda = 0$ and $\lambda = 1$, the MSE was tracked at each episode to analyze the learning dynamics throughout training.
 
 
 % ----
@@ -205,15 +243,17 @@
 \clearpage
 \section{Conclusions}
 
-    This project successfully implemented and compared two fundamental reinforcement learning approaches for solving the Easy21 card game: Monte Carlo simulation and Temporal Difference (TD) learning with SARSA. The custom environment and modular agent architecture developed from scratch demonstrated the practical application of action-value methods in a stochastic decision-making scenario.
+    This project successfully implemented and compared two fundamental reinforcement learning approaches for solving the Easy21 card game: Monte Carlo simulation and Temporal Difference learning with Sarsa($\lambda$). The custom environment and modular agent architecture developed from scratch demonstrated the practical application of action-value methods in a stochastic decision-making scenario.
 
-    The Monte Carlo approach, using first-visit updates with episode-based learning, converged to a stable value function after 1,000,000 episodes. The adaptive learning rate $\alpha_{t} = 1/N(s_{t},a_{t})$ and epsilon-greedy exploration strategy $\epsilon_{t} = N_{0}/(N_{0} + N(s_{t}))$ with $N_{0} = 100$ enabled effective balance between exploration and exploitation. The resulting policy heatmap and 3D value function visualization clearly illustrated the agent's learned decision boundaries for different combinations of player and dealer cards.
+    The Monte Carlo approach, using first-visit updates with episode-based learning, converged to a stable value function after 1,000,000 episodes. The adaptive learning rate $\alpha_{t} = 1/N(s_{t},a_{t})$ and epsilon-greedy exploration strategy $\epsilon_{t} = N_{0}/(N_{0} + N(s_{t}))$ with $N_{0} = 100$ enabled effective balance between exploration and exploitation. The resulting policy heatmap and 3D value function visualization clearly illustrated the agent's learned decision boundaries for different combinations of player and dealer cards. This optimal Q* matrix served as the ground truth for evaluating the TD learning experiments.
 
-    The TD learning implementation with SARSA provided an alternative approach through step-by-step updates rather than episode-end batch updates. This online learning characteristic allowed the agent to adapt its policy during each episode, potentially offering faster convergence for certain state-action pairs. The mean-squared error metric computed every 1000 episodes provided quantitative assessment of learning progress and enabled comparison with the Monte Carlo baseline.
+    The Sarsa($\lambda$) implementation with eligibility traces provided a comprehensive study of the bias-variance tradeoff in TD learning. Experiments across 11 different $\lambda$ values revealed that $\lambda = 0.1$ achieved the lowest MSE (0.204343) after 1000 episodes, outperforming both pure one-step Sarsa ($\lambda = 0$, MSE = 0.237316) and Monte Carlo-like methods ($\lambda = 1$, MSE = 0.482572). This demonstrates that a small amount of eligibility trace provides the optimal balance between immediate TD updates and full episode backups when training with limited samples.
 
-    Both methods successfully learned viable blackjack strategies, as evidenced by the value function visualizations presented in Figures \ref{fig:monte_carlo_heat_map}, \ref{fig:monte_carlo_value_function}, \ref{fig:td_learning_heat_map}, and \ref{fig:td_learning_value_function}. The implementation's modular design, with configuration-driven parameters and separation of concerns between environment, agent, and visualization components, facilitated systematic experimentation and reproducible results.
+    The learning curve analysis comparing $\lambda = 0$ and $\lambda = 1$ highlighted a fundamental insight: TD methods converge faster with fewer episodes by bootstrapping from current estimates, while Monte Carlo methods require substantially more samples to achieve low-variance Q-value estimates. The progressive degradation of performance as $\lambda$ increases beyond 0.1 indicates that excessive credit assignment to distant state-action pairs introduces more noise than signal in the early stages of learning.
 
-    The project demonstrated that reinforcement learning can effectively solve card game scenarios without explicit knowledge of optimal strategies, relying solely on trial-and-error interaction with the environment. The comparison between Monte Carlo and TD methods highlighted the trade-offs between episode-based and incremental learning approaches in the context of episodic tasks with terminal rewards.
+    The modular design proposed in this project, with a configuration file to quickly tweak parameters and ensure separation of concerns between environment, agent and visualization components, facilitated experimentation and reproducible results.
+
+    In conclusion, the comparison between Monte Carlo and Sarsa($\lambda$) methods highlighted important trade-offs: Monte Carlo provides unbiased estimates but requires many episodes to converge, while TD methods with appropriate $\lambda$ values offer faster learning but may introduce bias. For the Easy21 task, Sarsa with small eligibility traces ($\lambda \approx 0.1$) represents the most sample-efficient approach.
 
 
 % ----
