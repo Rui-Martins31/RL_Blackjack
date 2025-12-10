@@ -16,7 +16,7 @@ else:
 
 # Training
 MONTE_CARLO: bool           = True   # True: Monte Carlo,
-                                     # False: TD Learning (Q-Learning)
+                                     # False: TD Learning
 
 GAMMA: float                = 1.0    # Discount Factor
 N_0: float                  = 100.0  # Epsilon constant

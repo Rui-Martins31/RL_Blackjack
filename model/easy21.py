@@ -24,7 +24,6 @@ class Easy21:
         self.prob_black: float  = 2/3
     
     def _draw_card(self) -> int:
-        # CAREFUL!!! We can draw a red card. It should be a value in [-10, -1] U [1, 10]
         card  = random.randint(*self.draw_values)
         if (random.random() < self.prob_black): return card
         else: return -card
@@ -55,38 +54,38 @@ class Easy21:
         terminal: bool        = False
         reward: float         = 0.0
 
-        # Player action
+        # Player hits
         if action == HIT:
             self.cards_player.append(self._draw_card())
 
-            # Check if player busted immediately after hitting
+            # Check if player busted
             player_sum = sum(self.cards_player)
             if (player_sum > 21) or (player_sum < 1):
                 print(f"Player busted!")
                 new_state: tuple[int] = (sum(self.cards_dealer), player_sum)
                 return new_state, True, -1.0
 
-            # Player didn't bust after hit, episode continues
+            # Player didn't bust
             new_state: tuple[int] = (sum(self.cards_dealer), player_sum)
             return new_state, False, 0.0
 
-        # Player sticks (action == STICK)
+        # Player sticks
         self._dealer_logic()
 
-        # New state after dealer plays
+        # New state
         new_state: tuple[int] = (
             sum(self.cards_dealer),
             sum(self.cards_player)
         )
 
-        # Check dealer bust
+        # Check dealer busted
         terminal = True
         busted_dealer: bool = (new_state[DEALER] > 21) or (new_state[DEALER] < 1)
         if busted_dealer:
             print(f"Dealer busted!")
             return new_state, terminal, 1.0
 
-        # Compare final sums
+        # Get final result
         if (new_state[DEALER] > new_state[PLAYER]):
             #print(f"Player LOSES!")
             reward = -1.0

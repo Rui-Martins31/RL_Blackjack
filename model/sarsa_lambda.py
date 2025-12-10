@@ -108,7 +108,7 @@ def main():
     lambda_0_curve   = None
     lambda_1_curve   = None
 
-    print("\nRunning Sarsa(λ) experiments...")
+    print("\nRunning Sarsa(λ)...")
     for idx, lambda_param in enumerate(lambda_values):
         print(f"[{idx+1}/{len(lambda_values)}] Testing λ = {lambda_param:.1f}...")
         track_curve = (lambda_param == 0.0 or lambda_param == 1.0)
@@ -135,9 +135,9 @@ def main():
     for lambda_param, mse in zip(lambda_values, mse_values):
         print(f"  λ = {lambda_param:.1f}: MSE = {mse:.6f}")
 
-    best_idx = np.argmin(mse_values)
+    best_idx    = np.argmin(mse_values)
     best_lambda = lambda_values[best_idx]
-    best_mse = mse_values[best_idx]
+    best_mse    = mse_values[best_idx]
     print(f"\n  Best λ = {best_lambda:.1f} with MSE = {best_mse:.6f}")
     print("="*60)
 
@@ -156,7 +156,7 @@ def main():
             save_path="images/td_learning_curves.png"
         )
 
-    print("\nAll plots generated successfully!")
+    print("\n")
     print("="*60)
 
     plt.show()
